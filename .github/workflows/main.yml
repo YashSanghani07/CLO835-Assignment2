@@ -45,10 +45,3 @@ jobs:
         # Navigate to the root where Dockerfile.dogs is located
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile.dogs .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-    - name: Deploy to Kubernetes
-      env:
-        KUBECONFIG: ${{ secrets.KUBECONFIG }}
-      run: |
-        kubectl apply -f manifests/pod-cats.yaml
-        kubectl apply -f manifests/pod-dogs.yaml
