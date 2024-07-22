@@ -3,20 +3,17 @@ name: Deploy to ECR
 on: 
   push:
     branches:
-    - main
+      - main
   pull_request:
     branches:
-    - main
+      - main
 
 jobs:
-  
   build:
-    
-    name: Build Image
+    name: Build and Push Docker Images
     runs-on: ubuntu-latest
    
     steps:
-
     - name: Check out code
       uses: actions/checkout@v2
 
@@ -29,27 +26,29 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: us-east-1
 
-    - name: Build, test, tag, and push image to Amazon ECR
+    - name: Build, tag, and push cats image to Amazon ECR
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: application
-        IMAGE_TAG: latest-v2
-      run: |
-        cd app
-        
-        #Docker build
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-     
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        
-    - name: Build, test, tag, and push image to Amazon ECR
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: database
+        ECR_REPOSITORY: cats
         IMAGE_TAG: latest
       run: |
-        cd mysql
-        #Docker build
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        # Navigate to the root where Dockerfile.cats is located
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile.cats .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         
+    - name: Build, tag, and push dogs image to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: dogs
+        IMAGE_TAG: latest
+      run: |
+        # Navigate to the root where Dockerfile.dogs is located
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile.dogs .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - name: Deploy to Kubernetes
+      env:
+        KUBECONFIG: ${{ secrets.KUBECONFIG }}
+      run: |
+        kubectl apply -f manifests/pod-cats.yaml
+        kubectl apply -f manifests/pod-dogs.yaml
